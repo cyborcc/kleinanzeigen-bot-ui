@@ -131,12 +131,25 @@ describe('startVncLogin', () => {
     expect(xvncCall[2]).toMatchObject({ detached: true, stdio: 'ignore' });
   });
 
+  it('starts the display at a desktop size so unattended runs are not served the mobile layout', async () => {
+    await startVncLogin('/ws');
+    const args = mockSpawnFn.mock.calls[0][1] as string[];
+    const geometry = args[args.indexOf('-geometry') + 1];
+    const [width] = geometry.split('x').map(Number);
+    // No viewer connects on a scheduled or one-click run, so noVNC never resizes the
+    // display: the start size is what the whole run sees. Below ~1024px Kleinanzeigen
+    // serves the mobile layout, where the bot's login detection cannot find the account
+    // email and the run stops for a manual login.
+    expect(width).toBeGreaterThanOrEqual(1024);
+  });
+
   it('spawns chromium with correct kiosk args', async () => {
     await startVncLogin('/ws');
     // spawn calls: [0] Xvnc, [1] window manager (sh -c matchbox), [2] Chromium
     const chromiumCall = mockSpawnFn.mock.calls[2];
     const args = chromiumCall[1] as string[];
     expect(args).toContain('--kiosk');
+    expect(args).toContain('--window-size=1440,900');
     expect(args).toContain('--remote-debugging-port=9300');
     expect(args).toContain('--user-data-dir=/ws/.temp/browser-profile');
     expect(args).toContain('https://www.kleinanzeigen.de/m-einloggen-sso.html');

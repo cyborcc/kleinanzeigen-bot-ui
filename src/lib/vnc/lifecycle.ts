@@ -27,6 +27,15 @@ const CDP_COLD_START_TIMEOUT_MS = 90_000;
 // connecting timeout: the X-wait (≤20s) plus the 90s CDP-wait leave headroom for the brief
 // pre-spawn cleanup, so the client's escape hatch effectively never fires on a healthy host.
 const X_SERVER_READY_TIMEOUT_MS = 20_000;
+// Initial Xvnc framebuffer size. noVNC (resize=remote) still resizes the display to the
+// viewer's window, so this only decides what unattended runs get: nobody opens the browser
+// tab for a scheduled or one-click job, no viewer ever connects, and the display keeps its
+// start size for the whole run. At 520x600 that was the mobile layout, where the bot's login
+// detection cannot find the account email (it only accepts `.mr-medium` / `#user-email`) and
+// every run stopped for a manual login. A desktop start size keeps those runs on the desktop
+// layout; interactive viewers are unaffected because they resize on connect.
+const DISPLAY_WIDTH = 1440;
+const DISPLAY_HEIGHT = 900;
 // Grace period after SIGTERM before escalating an orphaned Xvnc to SIGKILL (freeXDisplay).
 const XVNC_TERM_GRACE_MS = 2_000;
 const XVNC_TERM_POLL_MS = 100;
@@ -290,7 +299,7 @@ export async function startVncLogin(workspace: string): Promise<VncSession> {
         'Xvnc',
         [
           `:${display}`,
-          '-geometry', '520x600',
+          '-geometry', `${DISPLAY_WIDTH}x${DISPLAY_HEIGHT}`,
           '-depth', '24',
           '-SecurityTypes', 'None',
           '-AlwaysShared',
@@ -328,6 +337,7 @@ export async function startVncLogin(workspace: string): Promise<VncSession> {
         chromiumBin,
         [
           '--kiosk',
+          `--window-size=${DISPLAY_WIDTH},${DISPLAY_HEIGHT}`,
           `--user-data-dir=${profile}`,
           `--remote-debugging-port=${cdpPort}`,
           '--remote-debugging-address=127.0.0.1',
