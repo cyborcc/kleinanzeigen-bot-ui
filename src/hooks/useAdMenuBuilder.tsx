@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { useToast, showConfirm } from '@/components/ui';
+import { useToast, showConfirm, showRepostActionPicker } from '@/components/ui';
 import type { DropdownMenuItem } from '@/components/ui';
 import { api } from '@/lib/api/client';
 import { useAds, useUpdateAdByFile } from '@/hooks/useAds';
@@ -60,8 +60,8 @@ export function useAdMenuBuilder({ onSaveAsTemplate }: AdMenuOptions): (ad: AdLi
 
   // Fire a bot command, then surface feedback: success toast + immediate job-pill refresh.
   const runBotCommand = useCallback(
-    (endpoint: string, ads: string, successMsg: string, errorMsg: string) =>
-      api.post<Job>(endpoint, { ads })
+    (endpoint: string, ads: string, successMsg: string, errorMsg: string, options: Record<string, unknown> = {}) =>
+      api.post<Job>(endpoint, { ads, ...options })
         .then(() => {
           toast('success', successMsg);
           refreshAds();
@@ -97,10 +97,13 @@ export function useAdMenuBuilder({ onSaveAsTemplate }: AdMenuOptions): (ad: AdLi
           );
           if (!ok) return;
         }
-        runBotCommand('/api/bot/publish', ad.id ? String(ad.id) : 'new', 'Veröffentlichung gestartet', 'Fehler beim Veröffentlichen');
+        const afterAction = ad.id ? await showRepostActionPicker() : 'delete';
+        if (afterAction === null) return;
+        runBotCommand('/api/bot/publish', ad.id ? String(ad.id) : 'new', 'Veröffentlichung gestartet', 'Fehler beim Veröffentlichen', { after_action: afterAction });
       } },
     ];
     if (ad.id) {
+      items.push({ label: 'Von Kleinanzeigen neu herunterladen', icon: <Icon paths={ICONS.Aktualisieren} />, onClick: () => runBotCommand('/api/bot/download', String(ad.id), 'Download gestartet', 'Fehler beim Herunterladen') });
       items.push({ label: 'Aktualisieren', icon: <Icon paths={ICONS.Aktualisieren} />, onClick: () => runBotCommand('/api/bot/update', String(ad.id), 'Aktualisierung gestartet', 'Fehler beim Aktualisieren') });
       if (isExpiringSoon(ad) || isExpired(ad)) {
         items.push({ label: 'Verlängern', icon: <Icon paths={ICONS.Verlängern} />, onClick: () => runBotCommand('/api/bot/extend', String(ad.id), 'Verlängerung gestartet', 'Fehler beim Verlängern') });

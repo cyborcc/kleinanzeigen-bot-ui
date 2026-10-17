@@ -1,4 +1,4 @@
-import { jobs, cancelJob } from '@/lib/bot/jobs';
+import { jobs, cancelJob, startJob } from '@/lib/bot/jobs';
 import { runBotCommand, hasBrowserConnectionError } from '@/lib/bot/runner';
 import { onJobStarting, onJobCompleted } from '@/lib/bot/hooks';
 import { stopForBot, restartAllBrowserless } from '@/lib/messaging/gateway';
@@ -301,6 +301,10 @@ async function executeAndAdvance(jobId: string, command: string, workspace: stri
     // instead of failing for good. Skipped in attach mode (a headless re-queue would bypass the
     // VNC browser). The slot is released below regardless, so the wait blocks no other job.
     const finalJob = jobs.get(jobId);
+    if (finalJob?.status === 'completed' && finalJob.on_success_command) {
+      const followup = startJob(finalJob.on_success_command, workspace, finalJob.user_id);
+      finalJob.output += `\n--- Folgeaktion „${finalJob.on_success_label ?? finalJob.on_success_command}“ als Job ${followup.job_id} eingeplant ---\n`;
+    }
     // Only the LAST attempt's output decides — split off any appended previous-attempt error so a
     // job whose final failure was NON-transient (e.g. login/config) isn't re-queued just because an
     // earlier attempt's "Failed to connect" text still sits in the accumulated log.

@@ -22,16 +22,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { ads, force, keep_old, verbose } = parsed.data;
+    const { ads, force, keep_old, verbose, after_action } = parsed.data;
     const validatedAds = validateAdsParam(ads, new Set(['all', 'due', 'new', 'changed']));
 
     const flags = buildFlags({
       ads: validatedAds,
       force,
-      keepOld: keep_old,
+      keepOld: keep_old || after_action !== 'delete',
       verbose,
     });
-    const job = startJob(`publish ${flags}`.trim(), user.workspace, user.id);
+    const followup = after_action === 'reserve' || after_action === 'deactivate'
+      ? { command: `reserve --ads=${validatedAds}`, label: after_action === 'reserve' ? 'altes Inserat reservieren' : 'altes Inserat reservieren/deaktivieren' }
+      : undefined;
+    const job = startJob(`publish ${flags}`.trim(), user.workspace, user.id, undefined, false, followup);
     return NextResponse.json(withUserLabel(job));
   } catch (error) {
     return handleApiError(error);

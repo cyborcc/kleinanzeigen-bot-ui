@@ -36,7 +36,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // Only when the workspace isn't strict-headless (which has no VNC fallback).
     const forceVisible = originalJob.status === 'login_required'
       && resolveBrowserMode(readMergedConfig(workspace)) !== 'headless';
-    const newJob = startJob(originalJob.command, workspace, userId, undefined, forceVisible);
+    const followup = originalJob.on_success_command
+      ? { command: originalJob.on_success_command, label: originalJob.on_success_label ?? originalJob.on_success_command }
+      : undefined;
+    const newJob = startJob(originalJob.command, workspace, userId, undefined, forceVisible, followup);
     return NextResponse.json(withUserLabel(newJob));
   } catch (error) {
     return handleApiError(error);

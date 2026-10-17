@@ -103,6 +103,7 @@ export const publishOptionsSchema = z.object({
   force: z.boolean().default(false),
   keep_old: z.boolean().default(false),
   verbose: z.boolean().default(false),
+  after_action: z.enum(['delete', 'keep', 'reserve', 'deactivate']).default('delete'),
 });
 
 export const downloadOptionsSchema = z.object({

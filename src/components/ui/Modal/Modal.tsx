@@ -124,6 +124,92 @@ export function Modal({
 }
 
 /**
+ * Let the user select the safe follow-up action for an old listing before a
+ * repost is queued.  This stays imperative like showConfirm so menu hooks can
+ * use it without adding modal state to every card/table view.
+ */
+export function showRepostActionPicker(): Promise<'delete' | 'keep' | 'reserve' | 'deactivate' | null> {
+  return new Promise((resolve) => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    let closed = false;
+    function cleanup(result: 'delete' | 'keep' | 'reserve' | 'deactivate' | null): void {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener('keydown', onKey);
+      resolve(result);
+      container.remove();
+    }
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:var(--z-modal);display:flex;align-items:center;justify-content:center;';
+    const bg = document.createElement('div');
+    bg.style.cssText = 'position:absolute;inset:0;background-color:var(--bg-overlay);';
+    bg.addEventListener('click', () => cleanup(null));
+    overlay.appendChild(bg);
+
+    const content = document.createElement('div');
+    content.className = styles.content;
+    const header = document.createElement('div');
+    header.className = styles.header;
+    const title = document.createElement('h2');
+    title.className = styles.title;
+    title.textContent = 'Altes Inserat nach Neuveröffentlichung';
+    header.appendChild(title);
+    content.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = styles.body;
+    const message = document.createElement('p');
+    message.className = styles.confirmMessage;
+    message.textContent = 'Die Folgeaktion wird nur ausgeführt, wenn die Neuveröffentlichung erfolgreich war.';
+    body.appendChild(message);
+    const label = document.createElement('label');
+    label.textContent = 'Aktion für das alte Inserat';
+    label.style.cssText = 'display:block;margin-top:var(--space-3);margin-bottom:var(--space-1);font-size:var(--font-size-sm);font-weight:var(--font-semibold);';
+    const select = document.createElement('select');
+    select.setAttribute('aria-label', 'Aktion für das alte Inserat');
+    select.style.cssText = 'width:100%;min-height:40px;padding:0 var(--space-2);border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);font:inherit;';
+    const options: Array<[string, string]> = [
+      ['delete', 'Altes Inserat löschen'],
+      ['keep', 'Altes Inserat behalten'],
+      ['reserve', 'Altes Inserat reservieren'],
+      ['deactivate', 'Altes Inserat deaktivieren (reservieren)'],
+    ];
+    for (const [value, text] of options) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      select.appendChild(option);
+    }
+    select.value = 'reserve';
+    label.htmlFor = 'repost-after-action';
+    select.id = 'repost-after-action';
+    body.appendChild(label);
+    body.appendChild(select);
+    content.appendChild(body);
+
+    const footer = document.createElement('div');
+    footer.className = styles.footer;
+    const cancel = document.createElement('button');
+    cancel.textContent = 'Abbrechen';
+    cancel.style.cssText = 'padding:var(--space-1-5) var(--space-3);border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-tertiary);color:var(--text-primary);font:inherit;font-weight:var(--font-semibold);cursor:pointer;';
+    cancel.addEventListener('click', () => cleanup(null));
+    const confirm = document.createElement('button');
+    confirm.textContent = 'Veröffentlichung starten';
+    confirm.style.cssText = 'padding:var(--space-1-5) var(--space-3);border:1px solid var(--accent);border-radius:var(--radius-md);background:var(--accent);color:var(--accent-text);font:inherit;font-weight:var(--font-semibold);cursor:pointer;';
+    confirm.addEventListener('click', () => cleanup(select.value as 'delete' | 'keep' | 'reserve' | 'deactivate'));
+    footer.append(cancel, confirm);
+    content.appendChild(footer);
+    overlay.appendChild(content);
+    container.appendChild(overlay);
+    function onKey(e: KeyboardEvent): void { if (e.key === 'Escape') cleanup(null); }
+    document.addEventListener('keydown', onKey);
+    select.focus();
+  });
+}
+
+/**
  * Show a confirmation dialog imperatively.
  * Returns a promise that resolves to true (confirm) or false (cancel).
  */

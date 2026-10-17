@@ -107,6 +107,7 @@ export function startJob(
   userId: string = '',
   scheduledBy?: string,
   forceVisible: boolean = false,
+  onSuccess?: { command: string; label: string },
 ): Job {
   cleanupJobs();
 
@@ -121,6 +122,8 @@ export function startJob(
     workspace,
     scheduled_by: scheduledBy,
     force_visible: forceVisible || undefined,
+    on_success_command: onSuccess?.command,
+    on_success_label: onSuccess?.label,
   };
 
   jobs.set(jobId, job);

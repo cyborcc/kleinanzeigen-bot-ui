@@ -42,7 +42,17 @@ export function useCategoryName(mode: 'leaf' | 'full' = 'leaf'): (id: string | u
   return useCallback(
     (id: string | undefined | null): string => {
       if (!id) return '';
-      const full = map.get(id) ?? id;
+      let full = map.get(id);
+      if (!full && id) {
+        for (const [key, value] of map.entries()) {
+          if (key.startsWith(id + '/')) {
+            const parts = value.split(' > ');
+            full = parts.length > 1 ? parts.slice(0, -1).join(' > ') : parts[0];
+            break;
+          }
+        }
+      }
+      full = full ?? id;
       if (mode === 'full') return full;
       return full.split(' > ').pop() ?? full;
     },

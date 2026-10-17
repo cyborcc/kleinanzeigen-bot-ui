@@ -30,6 +30,8 @@ export interface Job {
   // the job sits in 'queued' waiting out the delay, outside the live queue).
   retry_count?: number;
   retry_at?: string;
+  on_success_command?: string;
+  on_success_label?: string;
 }
 
 export interface Schedule {

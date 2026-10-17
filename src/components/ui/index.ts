@@ -5,7 +5,7 @@ export { Input } from './Input/Input';
 export { Select } from './Select/Select';
 export { Textarea } from './Textarea/Textarea';
 export { Toggle } from './Toggle/Toggle';
-export { Modal, showConfirm } from './Modal/Modal';
+export { Modal, showConfirm, showRepostActionPicker } from './Modal/Modal';
 export { ToastProvider, useToast } from './Toast/ToastProvider';
 export { Badge } from './Badge/Badge';
 export type { BadgeVariant } from './Badge/Badge';
