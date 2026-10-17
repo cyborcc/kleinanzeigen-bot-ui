@@ -7,6 +7,8 @@ import { useAiAvailable } from '@/hooks/useAiAvailable';
 import { getResponderBadge, isResponderActive } from '@/lib/messaging/responderBadge';
 import { Spinner, EmptyState, Badge, Button, useToast } from '@/components/ui';
 import { ConversationList } from '@/components/messages/ConversationList';
+import { useVncLogin } from '@/hooks/useVncLogin';
+import { VncLoginModal } from '@/components/bot/VncLoginModal';
 import { ChatView } from '@/components/messages/ChatView';
 import { MfaCodeInput } from '@/components/bot/MfaCodeInput';
 import styles from '@/components/messages/Messages.module.scss';
@@ -61,7 +63,7 @@ function BrowserlessBanner({ botCommand }: { botCommand?: string | null }) {
   );
 }
 
-function LoginView() {
+function LoginView({ onOpenVnc, vncBusy }: { onOpenVnc?: () => void; vncBusy?: boolean }) {
   const start = useStartMessaging();
   const { toast } = useToast();
 
@@ -79,19 +81,31 @@ function LoginView() {
       <p className={styles.statusText}>
         Mit Kleinanzeigen verbinden um Nachrichten zu lesen und zu beantworten.
       </p>
-      <button
-        className={bannerStyles.btn}
-        onClick={handleStart}
-        disabled={start.isPending}
-        style={{ marginTop: 'var(--space-2)', padding: 'var(--space-2) var(--space-6)' }}
-      >
-        {start.isPending ? 'Wird verbunden…' : 'Anmelden'}
-      </button>
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {onOpenVnc && (
+          <button
+            type="button"
+            className={bannerStyles.btn}
+            onClick={onOpenVnc}
+            disabled={vncBusy}
+            style={{ padding: 'var(--space-2) var(--space-6)' }}
+          >
+            {vncBusy ? 'Wird gestartet…' : 'Chrome öffnen (Login)'}
+          </button>
+        )}
+        <Button
+          variant="secondary"
+          onClick={handleStart}
+          disabled={start.isPending}
+        >
+          {start.isPending ? 'Wird verbunden…' : 'Auto-Login'}
+        </Button>
+      </div>
     </div>
   );
 }
 
-function StatusView({ status, error, cancellable = false }: { status: string; error?: string; cancellable?: boolean }) {
+function StatusView({ status, error, cancellable = false, onOpenVnc }: { status: string; error?: string; cancellable?: boolean; onOpenVnc?: () => void }) {
   const stop = useStopMessaging();
 
   if (status === 'starting' || status === 'logging_in') {
@@ -101,17 +115,27 @@ function StatusView({ status, error, cancellable = false }: { status: string; er
         <p className={styles.statusText}>
           {STATUS_MESSAGES[status] || 'Verbindung wird hergestellt...'}
         </p>
-        {cancellable && (
-          <Button
-            variant="ghost"
-            size="sm"
-            loading={stop.isPending}
-            onClick={() => stop.mutate()}
-            style={{ marginTop: 'var(--space-2)' }}
-          >
-            Abbrechen
-          </Button>
-        )}
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+          {onOpenVnc && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onOpenVnc}
+            >
+              Chrome öffnen
+            </Button>
+          )}
+          {cancellable && (
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={stop.isPending}
+              onClick={() => stop.mutate()}
+            >
+              Abbrechen
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -125,7 +149,8 @@ function StatusView({ status, error, cancellable = false }: { status: string; er
           </svg>
         }
         title="Messaging nicht verfügbar"
-        message={error || 'Bitte einen Bot-Befehl ausführen um sich einzuloggen.'}
+        message={error || 'Bitte anmelden um Nachrichten zu laden.'}
+        action={onOpenVnc ? <Button onClick={onOpenVnc} variant="primary">Chrome öffnen (Login)</Button> : undefined}
       />
     </div>
   );
@@ -307,37 +332,51 @@ function InboxView({ botCommand }: { botCommand?: string | null }) {
 }
 
 export default function MessagesPage() {
+  const queryClient = useQueryClient();
   const { data: status, isLoading } = useMessagingStatus();
   const { data: responder } = useResponderStatus();
 
-  if (isLoading || !status) {
-    return <LoginView />;
-  }
+  const handleVncSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['messaging-status'] });
+    queryClient.invalidateQueries({ queryKey: ['conversations'] });
+  }, [queryClient]);
+  const vnc = useVncLogin(handleVncSuccess);
 
-  // No session or failed session — show login button
-  if (status.status === 'not_started' || status.status === 'error') {
-    return <LoginView />;
-  }
+  return (
+    <>
+      {(() => {
+        if (isLoading || !status) {
+          return <LoginView onOpenVnc={vnc.openWindow} vncBusy={vnc.busy} />;
+        }
 
-  // MFA required — global MfaOverlay handles this when KI is active (auto/review),
-  // so only show inline MfaView when KI is off
-  const kiActive = isResponderActive(responder?.mode);
-  if (status.status === 'awaiting_mfa' && !kiActive) {
-    return <MfaView />;
-  }
+        // No session or failed session — show login button
+        if (status.status === 'not_started' || status.status === 'error') {
+          return <LoginView onOpenVnc={vnc.openWindow} vncBusy={vnc.busy} />;
+        }
 
-  // Browserless mode — bot is running, API calls work only if we had a session before
-  if (status.status === 'browserless') {
-    if (!status.userId) {
-      // Never had a session — can't load conversations without cookies
-      return <StatusView status="starting" error={status.botCommand ? `Bot führt „${status.botCommand}" aus… Messaging startet danach automatisch.` : 'Bot läuft — Messaging startet nach Abschluss.'} />;
-    }
-    return <InboxView botCommand={status.botCommand} />;
-  }
+        // MFA required — global MfaOverlay handles this when KI is active (auto/review),
+        // so only show inline MfaView when KI is off
+        const kiActive = isResponderActive(responder?.mode);
+        if (status.status === 'awaiting_mfa' && !kiActive) {
+          return <MfaView />;
+        }
 
-  if (status.status !== 'ready') {
-    return <StatusView status={status.status} error={status.error} cancellable />;
-  }
+        // Browserless mode — bot is running, API calls work only if we had a session before
+        if (status.status === 'browserless') {
+          if (!status.userId) {
+            // Never had a session — can't load conversations without cookies
+            return <StatusView status="starting" error={status.botCommand ? `Bot führt „${status.botCommand}" aus… Messaging startet danach automatisch.` : 'Bot läuft — Messaging startet nach Abschluss.'} onOpenVnc={vnc.openWindow} />;
+          }
+          return <InboxView botCommand={status.botCommand} />;
+        }
 
-  return <InboxView />;
+        if (status.status !== 'ready') {
+          return <StatusView status={status.status} error={status.error} cancellable onOpenVnc={vnc.openWindow} />;
+        }
+
+        return <InboxView />;
+      })()}
+      <VncLoginModal open={vnc.modalOpen} token={vnc.token} onClose={vnc.close} />
+    </>
+  );
 }

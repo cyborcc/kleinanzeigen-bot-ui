@@ -496,6 +496,13 @@ export async function ensureSession(
     saveCookiesToDisk(workspace, freshCookies, freshUserId);
     return session;
   } catch (err) {
+    if (session.proc) {
+      try {
+        const pid = session.proc.pid;
+        session.proc = null;
+        if (pid) process.kill(-pid, 'SIGKILL');
+      } catch { /* fine */ }
+    }
     session.status = 'error';
     session.error = (err as Error).message;
     console.error('[messaging] Session start failed:', (err as Error).message);
