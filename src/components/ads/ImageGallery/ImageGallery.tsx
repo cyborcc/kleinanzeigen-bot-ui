@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api/client';
 import { ImagePreview, useToast } from '@/components/ui';
 import { applyImageLimits, adImageCapMessage, formatRejectMessage } from '@/lib/images/formats';
-import { resolveDropIntent } from './dropIntent';
+import { GALLERY_TILE_DRAG_TYPE, resolveDropIntent } from './dropIntent';
 import styles from './ImageGallery.module.scss';
 
 interface ImageGalleryProps {
@@ -218,7 +218,11 @@ export function ImageGallery({ images, adFile, isEdit = false, initialFiles, pen
   );
 
   // Drag reorder
-  const handleDragStart = useCallback((index: number) => setDragIndex(index), []);
+  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
+    // Marks this as a tile move for form-level drop zones (see isGalleryTileDrag)
+    e.dataTransfer.setData(GALLERY_TILE_DRAG_TYPE, String(index));
+    setDragIndex(index);
+  }, []);
   const handleDragEnd = useCallback(() => { setDragIndex(null); setDragOverIndex(null); }, []);
   const handleDragLeave = useCallback(() => setDragOverIndex(null), []);
 
@@ -272,7 +276,7 @@ export function ImageGallery({ images, adFile, isEdit = false, initialFiles, pen
               key={`${name}-${index}`}
               className={`${styles.item} ${isDragging ? styles.itemDragging : ''} ${isDragOver ? styles.itemDragOver : ''}`}
               draggable
-              onDragStart={() => handleDragStart(index)}
+              onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, index)}

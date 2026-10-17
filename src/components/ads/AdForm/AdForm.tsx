@@ -13,6 +13,7 @@ import { ContactSection } from './ContactSection';
 import { AdvancedSection } from './AdvancedSection';
 import { PriceReductionSection } from './PriceReductionSection';
 import { BotInfoSection } from './BotInfoSection';
+import { isGalleryTileDrag } from '../ImageGallery/dropIntent';
 import styles from './AdForm.module.scss';
 
 // Data passed from AI generation stored in sessionStorage
@@ -159,7 +160,7 @@ export function AdForm({
   const handleGlobalDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     dragCounter.current++;
-    if (e.dataTransfer.types.includes('Files')) {
+    if (e.dataTransfer.types.includes('Files') && !isGalleryTileDrag(e.dataTransfer.types)) {
       setDragOver(true);
     }
   }, []);
@@ -181,6 +182,8 @@ export function AdForm({
     e.preventDefault();
     dragCounter.current = 0;
     setDragOver(false);
+    // Moving a gallery tile is not a file upload (Chromium adds the dragged image as a File)
+    if (isGalleryTileDrag(e.dataTransfer.types)) return;
     const { accepted, rejected } = filterImageFiles(Array.from(e.dataTransfer.files));
     if (rejected.length > 0) toast('error', formatRejectMessage(rejected));
     if (accepted.length > 0 && dropHandlerRef.current) {

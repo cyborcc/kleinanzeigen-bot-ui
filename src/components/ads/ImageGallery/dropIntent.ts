@@ -1,6 +1,17 @@
 export type DropIntent = 'reorder' | 'upload' | 'none';
 
 /**
+ * Custom drag type set when a gallery tile is dragged. Chromium lists "Files" in
+ * `dataTransfer.types` for such a drag as well, so form-level drop zones use this marker to
+ * tell a tile move apart from files dragged in from outside the page.
+ */
+export const GALLERY_TILE_DRAG_TYPE = 'application/x-kleinanzeigen-gallery-tile';
+
+export function isGalleryTileDrag(types: ReadonlyArray<string>): boolean {
+  return types.includes(GALLERY_TILE_DRAG_TYPE);
+}
+
+/**
  * Decide what a drop inside the gallery means.
  *
  * A drag that started on a gallery tile always wins over files in `dataTransfer`: Chromium
