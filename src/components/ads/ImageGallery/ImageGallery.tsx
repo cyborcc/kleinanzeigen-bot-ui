@@ -210,6 +210,9 @@ export function ImageGallery({ images, adFile, isEdit = false, initialFiles, pen
   const handleUploadDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
+      // The gallery owns this drop: without this the upload card, the grid and the form-level
+      // drop zone each uploaded the same files again (3 copies for one dropped file)
+      e.stopPropagation();
       // A tile dragged onto the empty grid area or the upload card is not an upload
       if (resolveDropIntent(dragIndex, e.dataTransfer.files.length > 0) !== 'upload') return;
       handleUploadFiles(Array.from(e.dataTransfer.files));
