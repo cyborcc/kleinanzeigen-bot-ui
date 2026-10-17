@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/middleware';
 import { aiLimiter } from '@/lib/auth/rate-limiter';
 import { readMergedConfig } from '@/lib/yaml/config';
-import { resolveAiEndpoint } from '@/lib/ai/provider';
+import { resolveAiEndpoints } from '@/lib/ai/provider';
 import { loadCatAttrsData } from '@/lib/ads/normalize-attributes';
 import { resolveCategoryAndAttributes, type AiCallConfig } from '@/lib/ads/resolve-category-attributes';
 
@@ -26,19 +26,12 @@ export async function POST(req: NextRequest) {
 
     const config = readMergedConfig(user.workspace);
     const aiConfig = (config?.ai as Record<string, string>) ?? {};
-    const endpoint = resolveAiEndpoint(aiConfig, 'text');
-    if (!endpoint.apiKey) return NextResponse.json(emptyResult);
+    if (resolveAiEndpoints(aiConfig, 'text').length === 0) return NextResponse.json(emptyResult);
 
     // Rate-limit per user — shared budget with the generator
     aiLimiter.check(user.id);
 
-    const cfg: AiCallConfig = {
-      baseUrl: endpoint.baseUrl,
-      apiKey: endpoint.apiKey,
-      model: endpoint.model,
-      referer: aiConfig.referer ? String(aiConfig.referer) : undefined,
-      appName: aiConfig.app_name ? String(aiConfig.app_name) : undefined,
-    };
+    const cfg: AiCallConfig = { aiConfig };
 
     const result = await resolveCategoryAndAttributes(
       { title, description: body.description ?? '' },

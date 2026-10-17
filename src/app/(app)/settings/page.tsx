@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useAiModels } from '@/lib/api/queries/system';
+import { useAiModels, useHealth } from '@/lib/api/queries/system';
 import { Input, Textarea, Select, Toggle, Button, PageLoader, Section, EmptyState, useToast } from '@/components/ui';
 import { InfoTip } from '@/components/ads/AdForm/InfoTip';
 import { CarrierCard } from '@/components/shared/CarrierCard';
@@ -130,6 +130,9 @@ export default function SettingsPage() {
   }, []);
 
   const { data: aiModelsData } = useAiModels(isAdmin);
+  const { data: health } = useHealth();
+  const aiServerManaged = health?.ai_server_managed === true;
+  const aiProviders = health?.ai_providers ?? [];
   const models = useMemo(() => aiModelsData?.models ?? [], [aiModelsData]);
   const modelsAvailable = models.length > 0;
   const textModelOptions = useMemo(() => buildModelOptions(models, false, showAllModels, aiModel), [models, showAllModels, aiModel]);
@@ -344,7 +347,23 @@ export default function SettingsPage() {
           </div>
         </Section>
 
-        <Section title="KI" desc="OpenRouter-Zugang und Prompts für die KI-Anzeigenerstellung." open={openSections.has('ai')} onToggle={() => toggle('ai')}>
+        <Section title="KI" desc={aiServerManaged ? 'Anbieter laufen über die Serverkonfiguration. Hier stehen die Prompts für die KI-Anzeigenerstellung.' : 'OpenRouter-Zugang und Prompts für die KI-Anzeigenerstellung.'} open={openSections.has('ai')} onToggle={() => toggle('ai')}>
+          {aiServerManaged && (
+            <div className={styles.infoBox}>
+              <strong>KI-Anbieter (Serverkonfiguration):</strong>
+              <ol style={{ margin: 'var(--space-2) 0 0', paddingLeft: 'var(--space-5)' }}>
+                {aiProviders.map((p, i) => (
+                  <li key={`${p.provider}-${p.model}`}>
+                    {p.provider} · {p.model}{i === 0 ? ' (Hauptanbieter)' : ' (Ersatz bei Fehler)'}
+                  </li>
+                ))}
+              </ol>
+              <div style={{ marginTop: 'var(--space-2)' }}>
+                Gilt für Anzeigentexte, Bildanalyse, Kategorie-Vorschläge und KI-Nachrichten. Die Felder für API-Key und Modelle unten haben dann keine Wirkung. Die Prompts weiter unten werden verwendet.
+              </div>
+            </div>
+          )}
+          <fieldset disabled={aiServerManaged} style={{ border: 0, margin: 0, padding: 0, minWidth: 0, display: 'contents' }}>
           <Input
             label={<>OpenRouter API-Key <InfoTip text="API-Key von openrouter.ai für alle KI-Funktionen (Anzeigentexte, Bildanalyse, KI-Nachrichten). Gilt für alle Workspaces. Wird verschlüsselt gespeichert und nie im Klartext angezeigt." /></>}
             type="password"
@@ -369,6 +388,7 @@ export default function SettingsPage() {
               </>
             )}
           </div>
+          </fieldset>
           <Textarea label={<>Prompt (Anzeigentext) <InfoTip text="System-Prompt für die KI-Anzeigenerstellung. Steuert Stil, Struktur und Format der generierten Beschreibung." /></>} value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={8} />
           <Textarea label={<>Prompt (Bildanalyse) <InfoTip text="System-Prompt für die Bildanalyse. Steuert, welche Artikelinformationen die KI aus hochgeladenen Bildern extrahiert." /></>} value={aiPromptVision} onChange={(e) => setAiPromptVision(e.target.value)} rows={6} />
         </Section>

@@ -12,6 +12,8 @@ interface HealthResponse {
   user?: { email: string; role: string; display_name: string };
   auto_migrated?: boolean;
   ai_configured?: boolean;
+  ai_server_managed?: boolean;
+  ai_providers?: { provider: string; model: string }[];
 }
 
 interface CategoriesResponse {

@@ -10,6 +10,7 @@
 // attribute keys/values that are not confirmed entries in it are discarded.
 
 import { shortKey as attrShortKey, INPUT_COMBOBOX_KEYS } from './category-attributes';
+import { chatCompletion } from '@/lib/ai/chat';
 import {
   needsDisplayText,
   translateAttrValues,
@@ -17,12 +18,9 @@ import {
   type CatAttrEntry,
 } from './normalize-attributes';
 
+/** AI settings of the workspace; the provider chain itself comes from lib/ai/provider.ts. */
 export interface AiCallConfig {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-  referer?: string;
-  appName?: string;
+  aiConfig: Record<string, string>;
 }
 
 export interface ResolveInput {
@@ -205,15 +203,6 @@ function buildAttrLines(
   return lines;
 }
 
-function aiHeaders(cfg: AiCallConfig): Record<string, string> {
-  return {
-    Authorization: `Bearer ${cfg.apiKey}`,
-    'Content-Type': 'application/json',
-    ...(cfg.referer ? { 'HTTP-Referer': cfg.referer } : {}),
-    ...(cfg.appName ? { 'X-Title': cfg.appName } : {}),
-  };
-}
-
 // Pick the best-matching category ID from the SoT using a fast mini-AI call.
 // Passes the KA suggestion (if available) as a hint — the AI confirms it or picks a better match.
 // Returns null on failure so the caller can fall back gracefully.
@@ -234,11 +223,10 @@ async function selectCategoryViaAi(
       : '';
 
   try {
-    const resp = await fetch(`${cfg.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: aiHeaders(cfg),
-      body: JSON.stringify({
-        model: cfg.model,
+    const result = await chatCompletion(
+      cfg.aiConfig,
+      'text',
+      {
         messages: [
           {
             role: 'system',
@@ -247,17 +235,20 @@ async function selectCategoryViaAi(
           },
           {
             role: 'user',
-            content: `Artikel: "${title}"\nBeschreibung: "${descPreview}"${kaHint}\n\nVerfügbare Kategorien:\n${categoryList}`,
+            content: `Artikel: "${title}"
+Beschreibung: "${descPreview}"${kaHint}
+
+Verfügbare Kategorien:
+${categoryList}`,
           },
         ],
         temperature: 0,
         max_tokens: 60,
-      }),
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    const selected = (data.choices?.[0]?.message?.content ?? '').trim().replace(/^["']|["']$/g, '');
+      },
+      { timeoutMs: 10000 },
+    );
+    if (!result.ok) return null;
+    const selected = result.content.replace(/^["']|["']$/g, '');
     return catAttrsData.categories[selected] ? selected : null;
   } catch {
     return null;
@@ -280,11 +271,10 @@ Wähle für die folgenden Felder den passendsten Wert aus den erlaubten Optionen
 ${missingLines.join('\n')}`;
 
   try {
-    const resp = await fetch(`${cfg.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: aiHeaders(cfg),
-      body: JSON.stringify({
-        model: cfg.model,
+    const result = await chatCompletion(
+      cfg.aiConfig,
+      'text',
+      {
         messages: [
           {
             role: 'system',
@@ -295,12 +285,11 @@ ${missingLines.join('\n')}`;
         ],
         temperature: 0.3,
         response_format: { type: 'json_object' },
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) return {};
-    const data = await resp.json();
-    const content = data.choices?.[0]?.message?.content ?? '';
+      },
+      { timeoutMs: 15000 },
+    );
+    if (!result.ok) return {};
+    const content = result.content;
     const miniAttrs = parseAiJson(content) as Record<string, string>;
 
     // Only apply values that are from the allowed options list

@@ -4,7 +4,7 @@ import { listConversations, getConversation, sendMessage } from './gateway';
 import { sleep } from '@/lib/browser/cdp';
 import { buildSystemPrompt, buildChatMessages, loadMessagingRules } from './prompts';
 import { readMergedConfig } from '@/lib/yaml/config';
-import { resolveAiEndpoint } from '@/lib/ai/provider';
+import { chatCompletion } from '@/lib/ai/chat';
 import type { ConversationDetail } from '@/types/message';
 
 const STATS_FILE = '.ai-stats.json';
@@ -215,7 +215,7 @@ function pruneSet(set: Set<string>, max: number): void {
 }
 
 /**
- * Call OpenRouter LLM to generate a reply.
+ * Generate a reply through the AI provider chain (Swisscom Qwen, then KI-Connect, then Swisscom GLM).
  */
 async function generateReply(
   workspace: string,
@@ -224,45 +224,20 @@ async function generateReply(
   const config = readMergedConfig(workspace);
   const aiConfig = (config?.ai as Record<string, string>) ?? {};
 
-  const { apiKey, baseUrl, model } = resolveAiEndpoint(aiConfig, 'text');
-
-  if (!apiKey) {
-    throw new Error('Kein API-Key konfiguriert (ai.api_key in config.yaml)');
-  }
-
   const systemPrompt = buildSystemPrompt(workspace, conv);
   const messages = buildChatMessages(conv, systemPrompt);
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      ...(aiConfig.referer ? { 'HTTP-Referer': String(aiConfig.referer) } : {}),
-      ...(aiConfig.app_name ? { 'X-Title': String(aiConfig.app_name) } : {}),
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: 300,
-      temperature: 0.7,
-      ...(baseUrl.includes('myai.swisscom.ch') ? { chat_template_kwargs: { enable_thinking: false } } : {}),
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    throw new Error(`LLM API Fehler: ${response.status} — ${errorText.slice(0, 200)}`);
+  const result = await chatCompletion(
+    aiConfig,
+    'text',
+    { messages, max_tokens: 300, temperature: 0.7 },
+    { timeoutMs: 60000 },
+  );
+  if (!result.ok) {
+    throw new Error(`LLM API Fehler: ${result.status} — ${result.detail}`);
   }
 
-  const data = await response.json() as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-
-  const reply = data.choices?.[0]?.message?.content?.trim();
-  if (!reply) throw new Error('LLM gab keine Antwort zurück');
-
-  return reply;
+  return result.content;
 }
 
 /**
