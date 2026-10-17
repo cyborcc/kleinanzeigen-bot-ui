@@ -30,7 +30,13 @@ export function getNextRepubDate(ad: AdListItem): Date | null {
  * Calculate the platform expiry date (60 days after last publish/update).
  * This is when kleinanzeigen.de automatically removes the ad.
  */
-export function getExpiryDate(ad: AdListItem): Date | null {
+export function getExpiryDate(ad: AdListItem, adStats?: AdStatsEntry): Date | null {
+  const liveExpiry = adStats?.expires_at;
+  if (liveExpiry) {
+    const [day, month, year] = liveExpiry.split('.').map(Number);
+    const parsed = new Date(year, month - 1, day);
+    if (Number.isFinite(parsed.getTime()) && parsed.getDate() === day && parsed.getMonth() === month - 1) return parsed;
+  }
   const baseDate = ad.updated_on || ad.created_on;
   if (!baseDate) return null;
   const base = new Date(baseDate);
@@ -39,17 +45,17 @@ export function getExpiryDate(ad: AdListItem): Date | null {
 }
 
 /** True when the ad is past its 60-day platform lifetime. */
-export function isExpired(ad: AdListItem): boolean {
+export function isExpired(ad: AdListItem, adStats?: AdStatsEntry): boolean {
   if (!ad.id) return false;
-  const expiry = getExpiryDate(ad);
+  const expiry = getExpiryDate(ad, adStats);
   if (!expiry) return false;
   return expiry.getTime() <= Date.now();
 }
 
 /** True when the ad is within EXPIRY_WARNING_DAYS of the 60-day platform limit. */
-export function isExpiringSoon(ad: AdListItem): boolean {
+export function isExpiringSoon(ad: AdListItem, adStats?: AdStatsEntry): boolean {
   if (!ad.id) return false;
-  const expiry = getExpiryDate(ad);
+  const expiry = getExpiryDate(ad, adStats);
   if (!expiry) return false;
   const remaining = expiry.getTime() - Date.now();
   return remaining > 0 && remaining <= EXPIRY_WARNING_DAYS * DAY_MS;
@@ -61,8 +67,8 @@ export function isReserved(ad: AdListItem, adStats?: AdStatsEntry): boolean {
 }
 
 /** Days remaining until the 60-day platform expiry (negative = overdue). */
-export function getExpiryDaysLeft(ad: AdListItem): number {
-  const expiry = getExpiryDate(ad);
+export function getExpiryDaysLeft(ad: AdListItem, adStats?: AdStatsEntry): number {
+  const expiry = getExpiryDate(ad, adStats);
   if (!expiry) return 0;
   return Math.ceil((expiry.getTime() - Date.now()) / DAY_MS);
 }
@@ -84,8 +90,8 @@ export function getStatusLabel(ad: AdListItem, adStats?: AdStatsEntry): AdStatus
   // hides the delete action for orphaned ads.
   if (ad.is_orphaned) return 'Verwaist';
   if (ad.active === false || ad.is_archived) return 'Inaktiv';
-  if (isExpired(ad)) return 'Abgelaufen';
-  if (isExpiringSoon(ad)) return 'Läuft bald ab';
+  if (isExpired(ad, adStats)) return 'Abgelaufen';
+  if (isExpiringSoon(ad, adStats)) return 'Läuft bald ab';
   if (ad.is_changed) return 'Geändert';
   return 'Aktiv';
 }

@@ -42,9 +42,9 @@ function filterByParams(ads: AdListItem[], status: string | null, category: stri
   } else if (status === 'draft') {
     result = result.filter((a) => !a.id && !a.is_archived);
   } else if (status === 'expiring') {
-    result = result.filter((a) => isExpiringSoon(a));
+    result = result.filter((a) => isExpiringSoon(a, a.id ? statsData?.ads[String(a.id)] : undefined));
   } else if (status === 'expired') {
-    result = result.filter((a) => isExpired(a));
+    result = result.filter((a) => isExpired(a, a.id ? statsData?.ads[String(a.id)] : undefined));
   } else if (status === 'changed') {
     result = result.filter((a) => a.is_changed);
   } else if (status === 'orphaned') {
@@ -125,9 +125,9 @@ export default function AdsPage() {
     draft: allAds.filter((a) => !a.id && !a.is_archived).length,
     reserved: allAds.filter((a) => isReserved(a, a.id ? statsData?.ads[String(a.id)] : undefined)).length,
     inactive: allAds.filter((a) => a.active === false).length,
-    expired: allAds.filter((a) => isExpired(a)).length,
+    expired: allAds.filter((a) => isExpired(a, a.id ? statsData?.ads[String(a.id)] : undefined)).length,
     orphaned: allAds.filter((a) => a.is_orphaned).length,
-    expiring: allAds.filter((a) => isExpiringSoon(a)).length,
+    expiring: allAds.filter((a) => isExpiringSoon(a, a.id ? statsData?.ads[String(a.id)] : undefined)).length,
     changed: allAds.filter((a) => a.is_changed).length,
   }), [allAds, statsData]);
 
