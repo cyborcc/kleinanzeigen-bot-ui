@@ -137,6 +137,25 @@ if (!g.__msgSessions) g.__msgSessions = new Map();
 /**
  * Auto-detect user ID via profile API.
  */
+/**
+ * Same check as fetchUserId(), but executed inside the real browser tab via CDP instead of
+ * Node's own fetch(). Kleinanzeigen's bot protection fingerprints the HTTP client itself, so a
+ * plain server-side fetch() with a copied Cookie header gets blocked (403) even with fully valid
+ * cookies, while the identical request run inside the already-logged-in Chromium tab succeeds —
+ * it carries the real browser's TLS/HTTP fingerprint instead of Node's.
+ */
+export async function fetchUserIdViaBrowser(cdpPort: number): Promise<number | null> {
+  try {
+    const ws = await openPageSocket(cdpPort);
+    const cdp = createCdpClient(ws);
+    const expr = `fetch('https://www.kleinanzeigen.de/m-mein-profil.json', { headers: { Accept: 'application/json' }, credentials: 'include' }).then(r => r.ok ? r.json() : null).then(j => (j && j.userId) ? j.userId : null)`;
+    const resp = await cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
+    ws.close();
+    const userId = resp.result?.result?.value as string | null | undefined;
+    return userId ? parseInt(userId, 10) : null;
+  } catch { return null; }
+}
+
 export async function fetchUserId(cookies: string): Promise<number | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
@@ -203,7 +222,7 @@ export async function ensureSession(
           existing.cookies = await extractCookiesFromCDP(refreshPort);
           existing.lastCookieRefresh = Date.now();
           if (!existing.userId) {
-            existing.userId = await fetchUserId(existing.cookies);
+            existing.userId = await fetchUserIdViaBrowser(refreshPort);
           }
           if (existing.userId) {
             saveCookiesToDisk(workspace, existing.cookies, existing.userId);
@@ -242,7 +261,7 @@ export async function ensureSession(
   if (!existing || existing.status === 'error') {
     const persisted = loadCookiesFromDisk(workspace);
     if (persisted) {
-      const userId = await fetchUserId(persisted.cookies);
+      const userId = persisted.userId;
       if (userId && !isAccessTokenExpired(persisted.cookies)) {
         const cookieSession = readyCookieSession(workspace, persisted.cookies, userId, persisted.savedAt);
         g.__msgSessions!.set(workspace, cookieSession);
@@ -268,7 +287,7 @@ export async function ensureSession(
     // live VNC port per workspace, so the session must NOT pin a port that can be recycled.
     try {
       const cookies = await extractCookiesFromCDP(vncCdpPort);
-      const userId = await fetchUserId(cookies);
+      const userId = await fetchUserIdViaBrowser(vncCdpPort);
       if (userId && !isAccessTokenExpired(cookies)) {
         const cookieSession = readyCookieSession(workspace, cookies, userId, Date.now());
         saveCookiesToDisk(workspace, cookies, userId);
@@ -369,7 +388,7 @@ export async function ensureSession(
     // Network.getAllCookies works on about:blank — no navigation needed
     await sleep(500);
     const cookies = await extractCookiesFromCDP(session.cdpPort);
-    const userId = await fetchUserId(cookies);
+    const userId = await fetchUserIdViaBrowser(session.cdpPort);
 
     if (userId) {
       if (!isAccessTokenExpired(cookies)) {
@@ -389,7 +408,11 @@ export async function ensureSession(
         await refreshCdp.send('Page.navigate', { url: 'https://www.kleinanzeigen.de/' });
         await sleep(3000);
         refreshWs.close();
-        const freshCookies = await extractCookiesFromCDP(session.cdpPort);
+        let freshCookies = await extractCookiesFromCDP(session.cdpPort);
+        for (let attempt = 0; isAccessTokenExpired(freshCookies) && attempt < 4; attempt++) {
+          await sleep(3000);
+          freshCookies = await extractCookiesFromCDP(session.cdpPort);
+        }
         if (!isAccessTokenExpired(freshCookies)) {
           session.cookies = freshCookies;
           session.userId = userId;
@@ -446,10 +469,18 @@ export async function ensureSession(
 
     ws.close();
 
-    // Re-extract cookies after login
+    // Re-extract cookies after login. The browser may still be completing the
+    // Auth0/SSO redirect, so poll the browser-based check instead of failing
+    // after the first fixed wait.
     await sleep(3000);
-    const freshCookies = await extractCookiesFromCDP(session.cdpPort);
-    const freshUserId = await fetchUserId(freshCookies);
+    let freshCookies = await extractCookiesFromCDP(session.cdpPort);
+    let freshUserId = await fetchUserIdViaBrowser(session.cdpPort);
+
+    for (let attempt = 0; !freshUserId && attempt < 5; attempt++) {
+      await sleep(3000);
+      freshCookies = await extractCookiesFromCDP(session.cdpPort);
+      freshUserId = await fetchUserIdViaBrowser(session.cdpPort);
+    }
 
     if (!freshUserId) {
       // Check where we ended up
@@ -629,8 +660,14 @@ export async function submitMessagingMfa(
 
     // Extract fresh cookies and user ID
     await sleep(2000);
-    const freshCookies = await extractCookiesFromCDP(session.cdpPort);
-    const freshUserId = await fetchUserId(freshCookies);
+    let freshCookies = await extractCookiesFromCDP(session.cdpPort);
+    let freshUserId = await fetchUserIdViaBrowser(session.cdpPort);
+
+    for (let attempt = 0; !freshUserId && attempt < 5; attempt++) {
+      await sleep(3000);
+      freshCookies = await extractCookiesFromCDP(session.cdpPort);
+      freshUserId = await fetchUserIdViaBrowser(session.cdpPort);
+    }
 
     if (!freshUserId) {
       session.status = 'error';
