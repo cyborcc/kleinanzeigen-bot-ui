@@ -785,8 +785,72 @@ async function getSession(workspace: string): Promise<BrowserSession> {
   throw new Error('Messaging-Session nicht bereit');
 }
 
+/**
+ * Resolves a CDP port for a live, already-logged-in browser backing this workspace, if any: the
+ * session's own browser process, or (for a cookie-only session reading from the shared VNC
+ * browser) the live VNC browser. Returns undefined if no live browser is currently reachable —
+ * callers then fall back to a plain Node fetch.
+ */
+async function resolveLiveCdpPort(workspace: string, session: BrowserSession): Promise<number | undefined> {
+  if (session.proc) return session.cdpPort;
+  try {
+    const { getVncSession } = await import('@/lib/vnc/lifecycle');
+    return getVncSession(workspace)?.cdpPort;
+  } catch { return undefined; }
+}
+
+/**
+ * Executes a fetch inside the given browser tab via CDP instead of Node's own fetch(). See
+ * fetchUserIdViaBrowser() above for why: Kleinanzeigen's bot protection fingerprints the HTTP
+ * client itself, so a plain server-side fetch() gets blocked (403) even with fully valid
+ * cookies, while the identical request run inside the real, already-logged-in Chromium tab
+ * succeeds. The browser's own cookie jar supplies the Cookie header via credentials: 'include';
+ * only non-cookie headers (Authorization, Content-Type) need to be passed through explicitly.
+ */
+async function fetchViaBrowser(cdpPort: number, url: string, options?: RequestInit): Promise<Response> {
+  const ws = await openPageSocket(cdpPort);
+  const cdp = createCdpClient(ws);
+  const method = options?.method ?? 'GET';
+  const headers = { Accept: 'application/json', ...(options?.headers as Record<string, string> ?? {}) };
+  const body = typeof options?.body === 'string' ? options.body : undefined;
+  const expr = `fetch(${JSON.stringify(url)}, { method: ${JSON.stringify(method)}, headers: ${JSON.stringify(headers)}, body: ${body ? JSON.stringify(body) : 'undefined'}, credentials: 'include' }).then(r => r.text().then(t => ({ status: r.status, statusText: r.statusText, body: t })))`;
+  const resp = await cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
+  ws.close();
+  const result = resp.result?.result?.value as { status: number; statusText: string; body: string } | undefined;
+  if (!result) throw new Error('Browser-Fetch fehlgeschlagen (keine Antwort von der Seite).');
+  return new Response(result.body, { status: result.status, statusText: result.statusText });
+}
+
 async function gatewayFetch(url: string, workspace: string, options?: RequestInit): Promise<Response> {
   const session = await getSession(workspace);
+
+  const liveCdpPort = await resolveLiveCdpPort(workspace, session);
+  if (liveCdpPort !== undefined) {
+    try {
+      const accessToken = session.cookies
+        .split('; ')
+        .find(c => c.startsWith('access_token='))
+        ?.split('=')
+        .slice(1)
+        .join('=');
+      const browserHeaders: Record<string, string> = { ...(options?.headers as Record<string, string> ?? {}) };
+      if (accessToken) browserHeaders['Authorization'] = `Bearer ${accessToken}`;
+      const response = await fetchViaBrowser(liveCdpPort, url, { ...options, headers: browserHeaders });
+      if (response.status === 401 || response.status === 403) {
+        stopSession(workspace);
+        deleteCookiesFromDisk(workspace);
+        throw new Error('Kleinanzeigen-Session abgelaufen. Seite neu laden zum Re-Login.');
+      }
+      if (!response.ok) {
+        throw new Error(`Gateway API Fehler: ${response.status} ${response.statusText}`);
+      }
+      return response;
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (msg.startsWith('Kleinanzeigen-Session') || msg.startsWith('Gateway API Fehler')) throw err;
+      // Browser unreachable mid-call (closed, crashed) — fall through to the Node-fetch path below.
+    }
+  }
 
   // Extract access_token from cookies for Bearer auth
   const accessToken = session.cookies
