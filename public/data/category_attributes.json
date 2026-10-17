@@ -19088,6 +19088,530 @@
       "shared": [
         "condition_s__v6"
       ]
+    },
+    "210/216": {
+      "category_name": "Auto, Rad & Boot > Autos",
+      "group": "Auto, Rad & Boot",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "autos.marke_s",
+        "autos.schaden_s",
+        "autos.fuel_s",
+        "autos.shift_s",
+        "autos.typ_s",
+        "autos.anzahl_tueren_s",
+        "autos.umweltplakette_s",
+        "autos.schadstoffklasse_s",
+        "autos.material_innenausstattung_s",
+        "color_s",
+        "autos.model_s",
+        "autos.trailer_coupling_b",
+        "autos.park_assistant_b",
+        "autos.alluminium_rims_b",
+        "autos.xenon_led_light_b",
+        "autos.air_conditioning_b",
+        "autos.navi_b",
+        "autos.radio_tuner_b",
+        "autos.bluetooth_b",
+        "autos.handsfree_speaker_b",
+        "autos.sunroof_b",
+        "autos.seat_heating_b",
+        "autos.speed_control_b",
+        "autos.non_smoking_b",
+        "autos.abs_b",
+        "autos.full_service_history_b",
+        "autos.km_i",
+        "autos.ez_i",
+        "autos.power_i"
+      ]
+    },
+    "210/223": {
+      "category_name": "Auto, Rad & Boot > Autoteile & Reifen",
+      "group": "Auto, Rad & Boot",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "autoteile_reifen.art_s",
+        "autoteile_reifen.seller_badges_s"
+      ]
+    },
+    "210/211": {
+      "category_name": "Auto, Rad & Boot > Boote & Bootszubehör",
+      "group": "Auto, Rad & Boot",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "boote_bootszubehoer.art_s"
+      ]
+    },
+    "210/276": {
+      "category_name": "Auto, Rad & Boot > Nutzfahrzeuge & Anhänger",
+      "group": "Auto, Rad & Boot",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "anhaenger_nutzfahrzeuge.art_s"
+      ]
+    },
+    "210/220": {
+      "category_name": "Auto, Rad & Boot > Wohnwagen & -mobile",
+      "group": "Auto, Rad & Boot",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "wohnwagen_mobile.art_s",
+        "wohnwagen_mobile.marke_s",
+        "wohnwagen_mobile.km_i",
+        "wohnwagen_mobile.ez_i"
+      ]
+    },
+    "161/172": {
+      "category_name": "Elektronik > Audio & Hifi",
+      "group": "Elektronik",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "audio_hifi.art_s",
+        "condition_s",
+        "audio_hifi.condition_s"
+      ]
+    },
+    "161/173": {
+      "category_name": "Elektronik > Handy & Telefon",
+      "group": "Elektronik",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "handy_telekom.art_s",
+        "handy_telekom.device_equipment_s",
+        "color_s__v5",
+        "condition_s"
+      ]
+    },
+    "161/176": {
+      "category_name": "Elektronik > Haushaltsgeräte",
+      "group": "Elektronik",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "haushaltsgeraete.art_s",
+        "condition_s"
+      ]
+    },
+    "161/279": {
+      "category_name": "Elektronik > Konsolen",
+      "group": "Elektronik",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "konsolen.art_s",
+        "condition_s"
+      ]
+    },
+    "161/225": {
+      "category_name": "Elektronik > PC-Zubehör & Software",
+      "group": "Elektronik",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "pc_zubehoer_software.art_s",
+        "condition_s"
+      ]
+    },
+    "161/285": {
+      "category_name": "Elektronik > Tablets & Reader",
+      "group": "Elektronik",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "tablets_reader.art_s",
+        "condition_s"
+      ]
+    },
+    "161/175": {
+      "category_name": "Elektronik > TV & Video",
+      "group": "Elektronik",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "tv_video.art_s",
+        "condition_s"
+      ]
+    },
+    "161/227": {
+      "category_name": "Elektronik > Videospiele",
+      "group": "Elektronik",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "pc_videospiele.art_s",
+        "condition_s__v2"
+      ]
+    },
+    "80/246": {
+      "category_name": "Haus & Garten > Dekoration",
+      "group": "Haus & Garten",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "dekoration.art_s",
+        "color_s__v3",
+        "material_s",
+        "condition_s__v2"
+      ]
+    },
+    "80/239": {
+      "category_name": "Haus & Garten > Dienstleistungen Haus & Garten",
+      "group": "Haus & Garten",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "dienstleistungen_haus_garten.art_s",
+        "condition_s__v4"
+      ]
+    },
+    "80/89": {
+      "category_name": "Haus & Garten > Gartenzubehör & Pflanzen",
+      "group": "Haus & Garten",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "garten_pflanzen.art_s",
+        "color_s__v3",
+        "condition_s"
+      ]
+    },
+    "80/86": {
+      "category_name": "Haus & Garten > Küche & Esszimmer",
+      "group": "Haus & Garten",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "kueche_esszimmer.art_s",
+        "color_s__v3",
+        "condition_s__v2"
+      ]
+    },
+    "80/81": {
+      "category_name": "Haus & Garten > Schlafzimmer",
+      "group": "Haus & Garten",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "schlafzimmer.art_s",
+        "color_s__v3",
+        "material_s",
+        "condition_s__v2",
+        "schlafzimmer.color_s"
+      ]
+    },
+    "80/88": {
+      "category_name": "Haus & Garten > Wohnzimmer",
+      "group": "Haus & Garten",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "wohnzimmer.art_s",
+        "color_s__v3",
+        "material_s",
+        "condition_s__v2"
+      ]
+    },
+    "102/111": {
+      "category_name": "Jobs > Bau, Handwerk & Produktion",
+      "group": "Jobs",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "bau_handwerk_produktion.art_s",
+        "bau_handwerk_produktion.working_hours_s",
+        "bau_handwerk_produktion.wage_d"
+      ]
+    },
+    "102/114": {
+      "category_name": "Jobs > Büroarbeit & Verwaltung",
+      "group": "Jobs",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "bueroarbeit_verwaltung.art_s",
+        "bueroarbeit_verwaltung.working_hours_s",
+        "bueroarbeit_verwaltung.wage_d"
+      ]
+    },
+    "102/110": {
+      "category_name": "Jobs > Gastronomie & Tourismus",
+      "group": "Jobs",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "gastronomie_tourismus.art_s",
+        "gastronomie_tourismus.working_hours_s",
+        "gastronomie_tourismus.wage_d"
+      ]
+    },
+    "102/123": {
+      "category_name": "Jobs > Sozialer Sektor & Pflege",
+      "group": "Jobs",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "sozialer_sektor_pflege.art_s",
+        "sozialer_sektor_pflege.working_hours_s",
+        "sozialer_sektor_pflege.wage_d"
+      ]
+    },
+    "102/247": {
+      "category_name": "Jobs > Transport, Logistik & Verkehr",
+      "group": "Jobs",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "transport_logistik_verkehr.art_s",
+        "transport_logistik_verkehr.working_hours_s",
+        "transport_logistik_verkehr.wage_d"
+      ]
+    },
+    "102/117": {
+      "category_name": "Jobs > Vertrieb, Einkauf & Verkauf",
+      "group": "Jobs",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "vertrieb_einkauf_verkauf.art_s",
+        "vertrieb_einkauf_verkauf.working_hours_s",
+        "vertrieb_einkauf_verkauf.wage_d"
+      ]
+    },
+    "297/291": {
+      "category_name": "Dienstleistungen > Haus & Garten",
+      "group": "Dienstleistungen",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "dienstleistungen_haus_garten.art_s",
+        "condition_s__v4"
+      ]
+    },
+    "17/22": {
+      "category_name": "Familie, Kind & Baby > Baby- & Kinderkleidung",
+      "group": "Familie, Kind & Baby",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "baby_kinderkleidung.type_s",
+        "baby_kinderkleidung.groesse_s",
+        "baby_kinderkleidung.art_s",
+        "color_s__v4",
+        "condition_s__v3"
+      ]
+    },
+    "17/19": {
+      "category_name": "Familie, Kind & Baby > Baby- & Kinderschuhe",
+      "group": "Familie, Kind & Baby",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "baby_kinderschuhe.art_s",
+        "baby_kinderschuhe.groesse_s",
+        "color_s__v4",
+        "condition_s__v3"
+      ]
+    },
+    "17/20": {
+      "category_name": "Familie, Kind & Baby > Kinderzimmermöbel",
+      "group": "Familie, Kind & Baby",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "kinderzimmermoebel.art_s",
+        "color_s__v7",
+        "condition_s"
+      ]
+    },
+    "17/23": {
+      "category_name": "Familie, Kind & Baby > Spielzeug",
+      "group": "Familie, Kind & Baby",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "spielzeug.art_s",
+        "spielzeug.seller_badges_s",
+        "condition_s__v2"
+      ]
+    },
+    "130/138": {
+      "category_name": "Haustiere > Fische",
+      "group": "Haustiere",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "fische.art_s__v2"
+      ]
+    },
+    "130/134": {
+      "category_name": "Haustiere > Hunde",
+      "group": "Haustiere",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "hunde.art_s",
+        "hunde.alter_s",
+        "hunde.geimpft_s",
+        "hunde.erlaubnis_s"
+      ]
+    },
+    "130/136": {
+      "category_name": "Haustiere > Katzen",
+      "group": "Haustiere",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "katzen.art_s",
+        "katzen.alter_s",
+        "katzen.geimpft_s",
+        "katzen.erlaubnis_s"
+      ]
+    },
+    "130/132": {
+      "category_name": "Haustiere > Kleintiere",
+      "group": "Haustiere",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "kleintiere.art_s"
+      ]
+    },
+    "130/313": {
+      "category_name": "Haustiere > Zubehör",
+      "group": "Haustiere",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "zubehoer.art_s",
+        "pferde.art_s",
+        "fische.art_s"
+      ]
+    },
+    "153/224": {
+      "category_name": "Mode & Beauty > Beauty & Gesundheit",
+      "group": "Mode & Beauty",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "beauty_gesundheit.art_s"
+      ]
+    },
+    "153/154": {
+      "category_name": "Mode & Beauty > Damenbekleidung",
+      "group": "Mode & Beauty",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "kleidung_damen.art_s",
+        "kleidung_damen.brand_s",
+        "kleidung_damen.groesse_s",
+        "color_s__v2",
+        "condition_s__v3"
+      ]
+    },
+    "153/159": {
+      "category_name": "Mode & Beauty > Damenschuhe",
+      "group": "Mode & Beauty",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "schuhe_damen.art_s",
+        "schuhe_damen.brand_s",
+        "schuhe_damen.groesse_s",
+        "schuhe_damen.seller_badges_s",
+        "color_s__v2",
+        "condition_s__v3"
+      ]
+    },
+    "153/160": {
+      "category_name": "Mode & Beauty > Herrenbekleidung",
+      "group": "Mode & Beauty",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "kleidung_herren.art_s",
+        "kleidung_herren.brand_s",
+        "kleidung_herren.groesse_s",
+        "color_s__v2",
+        "condition_s__v3"
+      ]
+    },
+    "153/158": {
+      "category_name": "Mode & Beauty > Herrenschuhe",
+      "group": "Mode & Beauty",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "schuhe_herren.art_s",
+        "schuhe_herren.brand_s",
+        "schuhe_herren.groesse_s",
+        "color_s__v2",
+        "condition_s__v3"
+      ]
+    },
+    "153/156": {
+      "category_name": "Mode & Beauty > Taschen & Accessoires",
+      "group": "Mode & Beauty",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "accessoires_schmuck.art_s",
+        "color_s__v4",
+        "material_s__v3",
+        "condition_s__v3"
+      ]
+    },
+    "185/234": {
+      "category_name": "Freizeit, Hobby & Nachbarschaft > Sammeln",
+      "group": "Freizeit, Hobby & Nachbarschaft",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "sammeln.art_s",
+        "condition_s__v2"
+      ]
+    },
+    "185/230": {
+      "category_name": "Freizeit, Hobby & Nachbarschaft > Sport & Camping",
+      "group": "Freizeit, Hobby & Nachbarschaft",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "sport_camping.art_s",
+        "condition_s"
+      ]
+    },
+    "195/207": {
+      "category_name": "Immobilien > Grundstücke & Gärten",
+      "group": "Immobilien",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "grundstuecke_garten.type_s",
+        "grundstuecke_garten.art_s",
+        "grundstuecke_garten.provision_s",
+        "grundstuecke_garten.online_tour_s",
+        "grundstuecke_garten.qm_d",
+        "grundstuecke_garten.verfuegbarm_i",
+        "grundstuecke_garten.verfuegbary_i"
+      ]
+    },
+    "73/76": {
+      "category_name": "Musik, Filme & Bücher > Bücher & Zeitschriften",
+      "group": "Musik, Filme & Bücher",
+      "depth": 2,
+      "attributes": [],
+      "shared": [
+        "buecher_zeitschriften.art_s",
+        "condition_s__v2"
+      ]
     }
   }
 }
