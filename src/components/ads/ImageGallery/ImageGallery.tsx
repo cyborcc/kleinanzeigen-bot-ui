@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api/client';
 import { ImagePreview, useToast } from '@/components/ui';
 import { applyImageLimits, adImageCapMessage, formatRejectMessage } from '@/lib/images/formats';
+import { resolveDropIntent } from './dropIntent';
 import styles from './ImageGallery.module.scss';
 
 interface ImageGalleryProps {
@@ -209,9 +210,11 @@ export function ImageGallery({ images, adFile, isEdit = false, initialFiles, pen
   const handleUploadDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
+      // A tile dragged onto the empty grid area or the upload card is not an upload
+      if (resolveDropIntent(dragIndex, e.dataTransfer.files.length > 0) !== 'upload') return;
       handleUploadFiles(Array.from(e.dataTransfer.files));
     },
-    [handleUploadFiles],
+    [dragIndex, handleUploadFiles],
   );
 
   // Drag reorder
@@ -221,23 +224,25 @@ export function ImageGallery({ images, adFile, isEdit = false, initialFiles, pen
 
   const handleDragOver = useCallback((e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = dragIndex !== null ? 'move' : 'copy';
     setDragOverIndex(targetIndex);
-  }, []);
+  }, [dragIndex]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent, targetIndex: number) => {
       e.preventDefault();
+      e.stopPropagation();
       setDragOverIndex(null);
+      const intent = resolveDropIntent(dragIndex, e.dataTransfer.files.length > 0);
       // External file drop on an existing image slot — route to upload handler
-      if (e.dataTransfer.files.length > 0) {
-        e.stopPropagation();
+      if (intent === 'upload') {
         handleUploadFiles(Array.from(e.dataTransfer.files));
         return;
       }
-      if (dragIndex === null || dragIndex === targetIndex) return;
+      if (intent !== 'reorder' || dragIndex === targetIndex) return;
       const next = [...imagesRef.current];
-      const [moved] = next.splice(dragIndex, 1);
+      const [moved] = next.splice(dragIndex!, 1);
       next.splice(targetIndex, 0, moved);
       updateImages(next);
       setDragIndex(null);
