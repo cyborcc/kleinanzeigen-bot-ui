@@ -3,7 +3,8 @@ import path from 'path';
 import { listConversations, getConversation, sendMessage } from './gateway';
 import { sleep } from '@/lib/browser/cdp';
 import { buildSystemPrompt, buildChatMessages, loadMessagingRules } from './prompts';
-import { readMergedConfig, AI_DEFAULTS } from '@/lib/yaml/config';
+import { readMergedConfig } from '@/lib/yaml/config';
+import { resolveAiEndpoint } from '@/lib/ai/provider';
 import type { ConversationDetail } from '@/types/message';
 
 const STATS_FILE = '.ai-stats.json';
@@ -223,9 +224,7 @@ async function generateReply(
   const config = readMergedConfig(workspace);
   const aiConfig = (config?.ai as Record<string, string>) ?? {};
 
-  const apiKey = aiConfig.api_key ?? process.env.OPENROUTER_API_KEY ?? '';
-  const baseUrl = aiConfig.base_url ?? AI_DEFAULTS.base_url;
-  const model = aiConfig.model ?? AI_DEFAULTS.model;
+  const { apiKey, baseUrl, model } = resolveAiEndpoint(aiConfig, 'text');
 
   if (!apiKey) {
     throw new Error('Kein API-Key konfiguriert (ai.api_key in config.yaml)');

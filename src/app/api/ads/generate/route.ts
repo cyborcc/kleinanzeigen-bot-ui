@@ -3,6 +3,7 @@ import { aiGenerateSchema } from '@/validation/schemas';
 import { getCurrentUser } from '@/lib/auth/middleware';
 import { aiLimiter } from '@/lib/auth/rate-limiter';
 import { readMergedConfig, AI_DEFAULTS } from '@/lib/yaml/config';
+import { resolveAiEndpoint, resolveOpenRouterEndpoint } from '@/lib/ai/provider';
 import { allCarriersOf, type ShippingSizeId } from '@/lib/shipping';
 import { trackAdGeneration } from '@/lib/messaging/responder';
 import { loadCatAttrsData } from '@/lib/ads/normalize-attributes';
@@ -46,24 +47,21 @@ export async function POST(request: NextRequest) {
     const config = readMergedConfig(user.workspace);
     const aiConfig = (config?.ai as Record<string, string>) ?? {};
 
-    const apiKey = aiConfig.api_key ?? process.env.OPENROUTER_API_KEY ?? '';
-    const baseUrl = aiConfig.base_url ?? AI_DEFAULTS.base_url;
+    const hasImages = images.length > 0;
+    const endpoint = resolveAiEndpoint(aiConfig, hasImages ? 'vision' : 'text');
+    const { apiKey, baseUrl, model } = endpoint;
 
     if (!apiKey) {
       return NextResponse.json(
         {
           detail:
-            "No OpenRouter API key configured. Set 'ai.api_key' in config.yaml or the OPENROUTER_API_KEY environment variable.",
+            'No AI API key configured. Set SWISSCOM_QWEN_API_KEY for text or OPENROUTER_API_KEY for image analysis.',
         },
         { status: 400 },
       );
     }
 
-    // Model and prompts are determined server-side only — config overrides, then hardcoded defaults
-    const hasImages = images.length > 0;
-    const model = hasImages
-      ? (aiConfig.model_vision ?? AI_DEFAULTS.model_vision)
-      : (aiConfig.model ?? AI_DEFAULTS.model);
+    // Prompts are determined server-side only. Provider/model are selected above.
     const systemPrompt = hasImages
       ? (aiConfig.prompt_vision ?? AI_DEFAULTS.prompt_vision)
       : (aiConfig.prompt ?? AI_DEFAULTS.prompt);
@@ -90,16 +88,16 @@ export async function POST(request: NextRequest) {
       messages.push({ role: 'user', content: prompt });
     }
 
-    const resp = await fetch(`${baseUrl}/chat/completions`, {
+    const callAi = (selectedEndpoint: typeof endpoint) => fetch(`${selectedEndpoint.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${selectedEndpoint.apiKey}`,
         'Content-Type': 'application/json',
         ...(aiConfig.referer ? { 'HTTP-Referer': String(aiConfig.referer) } : {}),
         ...(aiConfig.app_name ? { 'X-Title': String(aiConfig.app_name) } : {}),
       },
       body: JSON.stringify({
-        model,
+        model: selectedEndpoint.model,
         messages,
         temperature: 0.7,
         response_format: { type: 'json_object' },
@@ -107,10 +105,18 @@ export async function POST(request: NextRequest) {
       signal: AbortSignal.timeout(hasImages ? 90000 : 60000),
     });
 
+    let resp = await callAi(endpoint);
+    // Qwen is multimodal. If the provider rejects its vision request, retain
+    // OpenRouter as a seamless image-only fallback.
+    if (!resp.ok && hasImages && endpoint.baseUrl.includes('myai.swisscom.ch')) {
+      const fallback = resolveOpenRouterEndpoint(aiConfig, 'vision');
+      if (fallback.apiKey) resp = await callAi(fallback);
+    }
+
     if (!resp.ok) {
       const errText = await resp.text();
       return NextResponse.json(
-        { detail: `OpenRouter API error: ${resp.status} - ${errText.slice(0, 200)}` },
+        { detail: `AI API error: ${resp.status} - ${errText.slice(0, 200)}` },
         { status: 502 },
       );
     }
@@ -137,7 +143,7 @@ export async function POST(request: NextRequest) {
       const cfg: AiCallConfig = {
         baseUrl,
         apiKey,
-        model: aiConfig.model ?? AI_DEFAULTS.model,
+        model: resolveAiEndpoint(aiConfig, 'text').model,
         referer: aiConfig.referer ? String(aiConfig.referer) : undefined,
         appName: aiConfig.app_name ? String(aiConfig.app_name) : undefined,
       };

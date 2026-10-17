@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/middleware';
 import { loadUsers, saveUsers, generateUserId, createUserWorkspace } from '@/lib/yaml/users';
 import { readMergedConfig, USER_CONFIG_KEYS } from '@/lib/yaml/config';
+import { resolveAiEndpoint } from '@/lib/ai/provider';
 
 import { hashPassword } from '@/lib/auth/password';
 import { jobs } from '@/lib/bot/jobs';
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
 
       const mergedCfg = readMergedConfig(userWorkspace);
       const aiCfg = (mergedCfg?.ai as Record<string, string>) ?? {};
-      result.ai_configured = !!(aiCfg.api_key ?? process.env.OPENROUTER_API_KEY);
+      result.ai_configured = !!resolveAiEndpoint(aiCfg, 'text').apiKey || !!resolveAiEndpoint(aiCfg, 'vision').apiKey;
     }
 
     if (userInfo) result.user = userInfo;

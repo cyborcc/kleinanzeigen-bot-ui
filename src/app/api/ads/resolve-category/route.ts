@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/middleware';
 import { aiLimiter } from '@/lib/auth/rate-limiter';
-import { readMergedConfig, AI_DEFAULTS } from '@/lib/yaml/config';
+import { readMergedConfig } from '@/lib/yaml/config';
+import { resolveAiEndpoint } from '@/lib/ai/provider';
 import { loadCatAttrsData } from '@/lib/ads/normalize-attributes';
 import { resolveCategoryAndAttributes, type AiCallConfig } from '@/lib/ads/resolve-category-attributes';
 
@@ -25,16 +26,16 @@ export async function POST(req: NextRequest) {
 
     const config = readMergedConfig(user.workspace);
     const aiConfig = (config?.ai as Record<string, string>) ?? {};
-    const apiKey = aiConfig.api_key ?? process.env.OPENROUTER_API_KEY ?? '';
-    if (!apiKey) return NextResponse.json(emptyResult);
+    const endpoint = resolveAiEndpoint(aiConfig, 'text');
+    if (!endpoint.apiKey) return NextResponse.json(emptyResult);
 
     // Rate-limit per user — shared budget with the generator
     aiLimiter.check(user.id);
 
     const cfg: AiCallConfig = {
-      baseUrl: aiConfig.base_url ?? AI_DEFAULTS.base_url,
-      apiKey,
-      model: aiConfig.model ?? AI_DEFAULTS.model,
+      baseUrl: endpoint.baseUrl,
+      apiKey: endpoint.apiKey,
+      model: endpoint.model,
       referer: aiConfig.referer ? String(aiConfig.referer) : undefined,
       appName: aiConfig.app_name ? String(aiConfig.app_name) : undefined,
     };
