@@ -324,6 +324,26 @@ export async function ensureSession(
     throw new Error('Keine gültige Session — Login erforderlich');
   }
 
+  // A bot job owns the shared profile. Launching here would kill the job's browser through
+  // ensureProfileFreeForLaunch (the responder poll retries a failed session every few seconds),
+  // so stay browserless until the queue drains; restartAllBrowserless revives the session then.
+  const { isQueueBusy } = await import('@/lib/bot/queue'); // dynamic: avoids a circular dependency
+  if (isQueueBusy()) {
+    const parked: BrowserSession = existing ?? {
+      proc: null,
+      cdpPort: getCdpPort(workspace),
+      cookies: '',
+      userId: null,
+      lastCookieRefresh: 0,
+      status: 'browserless',
+      startedAt: Date.now(),
+    };
+    parked.status = 'browserless';
+    parked.error = undefined;
+    g.__msgSessions!.set(workspace, parked);
+    return parked;
+  }
+
   // Clean up old session — SIGKILL for immediate death, same reason as stopForBot
   if (existing?.proc) {
     try { existing.proc.kill('SIGKILL'); } catch { /* fine */ }
